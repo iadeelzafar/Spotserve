@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
   // VIEW
   private CoordinatorLayout coordinatorLayout;
   private EditText editTextPort;
-  private FloatingActionButton floatingActionButtonOnOff;
+  private Button buttonOnOff;
   private View textViewMessage;
   private TextView textViewIpAccess;
 
@@ -55,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
   private int port;
 
   Button attachmentButton;
-
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -79,22 +78,22 @@ public class MainActivity extends AppCompatActivity {
       }
     });
 
-    floatingActionButtonOnOff = (FloatingActionButton) findViewById(R.id.floatingActionButtonOnOff);
-    floatingActionButtonOnOff.setOnClickListener(new View.OnClickListener() {
+    buttonOnOff = (Button) findViewById(R.id.floatingActionButtonOnOff);
+    buttonOnOff.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
 
         if (!isStarted && startAndroidWebServer()) {
           isStarted = true;
           textViewMessage.setVisibility(View.VISIBLE);
-          floatingActionButtonOnOff.setBackgroundTintList(
-              ContextCompat.getColorStateList(MainActivity.this, R.color.colorGreen));
+          buttonOnOff.setBackgroundColor(getResources().getColor(R.color.colorGreen));
+          buttonOnOff.setText("Turn Off");
           editTextPort.setEnabled(false);
         } else if (stopAndroidWebServer()) {
           isStarted = false;
           textViewMessage.setVisibility(View.INVISIBLE);
-          floatingActionButtonOnOff.setBackgroundTintList(
-              ContextCompat.getColorStateList(MainActivity.this, R.color.colorRed));
+          buttonOnOff.setBackgroundColor(getResources().getColor(R.color.colorRed));
+          buttonOnOff.setText("Turn On");
           editTextPort.setEnabled(true);
         }
       }
@@ -280,5 +279,5 @@ public class MainActivity extends AppCompatActivity {
       }
     }
   }
-
+}
 

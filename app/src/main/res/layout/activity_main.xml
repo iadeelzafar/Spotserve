@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/coordinatorLayout"
     android:layout_width="match_parent"
@@ -54,7 +55,6 @@
           android:layout_marginTop="50dp"
           android:gravity="center"
           android:text="@string/message"
-          android:textColor="@android:color/white"
           android:textSize="18sp"
           android:visibility="invisible" />
       <Button
@@ -69,14 +69,14 @@
 
   </LinearLayout>
 
-  <android.support.design.widget.FloatingActionButton
+  <Button
       android:id="@+id/floatingActionButtonOnOff"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:layout_gravity="end|bottom"
       android:layout_margin="16dp"
-      android:elevation="4dp"
-      android:src="@drawable/on_btn"
-      app:backgroundTint="@color/colorRed" />
+      android:background="@color/colorRed"
+      android:text="Turn On"
+ />
 
 </android.support.design.widget.CoordinatorLayout>
