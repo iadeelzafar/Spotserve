@@ -4,6 +4,8 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -49,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
   private Button buttonOnOff;
   private View textViewMessage;
   private TextView textViewIpAccess;
+  private Button copyButton;
 
   private static final int PICK_FILE_REQUEST = 1;
   private String selectedFilePath;
@@ -66,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
     editTextPort = (EditText) findViewById(R.id.editTextPort);
     textViewMessage = findViewById(R.id.textViewMessage);
     textViewIpAccess = (TextView) findViewById(R.id.textViewIpAccess);
+    copyButton = (Button) findViewById(R.id.copy_button);
+
     setIpAccess();
 
     attachmentButton = (Button) findViewById(R.id.attachment_button);
@@ -86,16 +91,26 @@ public class MainActivity extends AppCompatActivity {
         if (!isStarted && startAndroidWebServer()) {
           isStarted = true;
           textViewMessage.setVisibility(View.VISIBLE);
+          copyButton.setVisibility(View.VISIBLE);
           buttonOnOff.setBackgroundColor(getResources().getColor(R.color.colorGreen));
           buttonOnOff.setText("Turn Off");
           editTextPort.setEnabled(false);
         } else if (stopAndroidWebServer()) {
           isStarted = false;
           textViewMessage.setVisibility(View.INVISIBLE);
+          copyButton.setVisibility(View.INVISIBLE);
           buttonOnOff.setBackgroundColor(getResources().getColor(R.color.colorRed));
           buttonOnOff.setText("Turn On");
           editTextPort.setEnabled(true);
         }
+      }
+    });
+
+    copyButton.setOnClickListener(new View.OnClickListener() {
+      @Override public void onClick(View v) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("ip_address_label", getIpAddress()+":"+getPortFromEditText());
+        clipboard.setPrimaryClip(clip);
       }
     });
 
@@ -230,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
-  // get Ip address of the device's wireless access point i.e. wifi hotspot
+  // get Ip address of the device's wireless access point i.e. wifi hotspot OR wifi network
   private String getIpAddress() {
     String ip = "";
     try {
@@ -254,7 +269,7 @@ public class MainActivity extends AppCompatActivity {
       e.printStackTrace();
       ip += "Something Wrong! " + e.toString() + "\n";
     }
-    return "http://" + ip + ":";
+    return  "http://"+ip;
   }
 
   @Override
