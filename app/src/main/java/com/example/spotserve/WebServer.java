@@ -21,7 +21,6 @@ public class WebServer extends NanoHTTPD {
   }
 
   private void findMimeType() {
-    String type = null;
     String extension = MimeTypeMap.getFileExtensionFromUrl(selectedFilePath);
     if (extension != null) {
       type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
