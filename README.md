@@ -16,6 +16,7 @@ Turn on the wifi hotspot from your device. This way, the server will be hosted u
 <img src="screenshots/red_background.jpg">
 </p>
 
+
 ### Supported extensions
 Using this server, you can upload files of different mime types. Currently tested ones are mp3, mp4, pdf, txt, jpg, png, etc.
 
