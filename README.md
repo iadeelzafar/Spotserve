@@ -1,12 +1,19 @@
 # Spotserve
-Android web server using NanoHTTPD through wifi hotspot/wifi network.
+Android web server demo using NanoHTTPD through wifi hotspot/wifi network.
 
 ### Hosting the server:
-You can host the web server on your android device by:
-1. Connecting to a wifi network.
-2. Using the ip address of your wireless access point i.e. wifi hotspot. Have a look at this screenshot.
+You can host the web server on your android device by following one of the following two ways:
+
+**Choice 1**
+
+Connecting to a wifi network.
+
+**Choice 2**
+
+Turn on the wifi hotspot from your device. This way, the server will be hosted using the ip address of your wireless access point. Other devices can then access the web server by connecting to your device's hotspot.
+
 <p align="center">
-<img src="screenshots/wifi-hotspot.png" height="720" width="355">
+<img src="screenshots/red_background.jpg">
 </p>
 
 ### Supported extensions
