@@ -6,11 +6,14 @@ You can host the web server on your android device by following one of the follo
 
 **Choice 1**
 
-Connecting to a wifi network.
+* Connect your server device to a wifi network.
+* Client devices connected to the same wifi network, will be able to access the server.
 
 **Choice 2**
 
-Turn on the wifi hotspot from your device. This way, the server will be hosted using the ip address of your wireless access point. Other devices can then access the web server by connecting to your device's hotspot.
+* Turn on the hotspot on your server device.
+* This way, the server will be hosted using the ip address of your server device's wireless access point. 
+* Client devices can then access the web server by connecting to your server device's hotspot.
 
 <p align="center">
 <img src="screenshots/red_background.jpg">
