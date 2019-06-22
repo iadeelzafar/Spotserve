@@ -73,13 +73,14 @@
           android:text="@string/message"
           android:textSize="18sp"
           android:visibility="invisible" />
+
       <Button
-          android:id="@+id/attachment_button"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
-          android:layout_marginTop="50dp"
-          android:text="Attachment"
+          android:id="@+id/refresh_button"
+          android:text="Refresh"
           />
+
 
     </LinearLayout>
 

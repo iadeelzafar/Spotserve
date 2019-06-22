@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
   private View textViewMessage;
   private TextView textViewIpAccess;
   private Button copyButton;
+  private Button refreshButton;
 
   public static boolean nightMode;
 
@@ -93,6 +94,13 @@ public class MainActivity extends AppCompatActivity {
     textViewMessage = findViewById(R.id.textViewMessage);
     textViewIpAccess = (TextView) findViewById(R.id.textViewIpAccess);
     copyButton = (Button) findViewById(R.id.copy_button);
+    refreshButton = (Button) findViewById(R.id.refresh_button);
+
+    refreshButton.setOnClickListener(new View.OnClickListener() {
+      @Override public void onClick(View view) {
+        setIpAccess();
+      }
+    });
 
     setIpAccess();
 
@@ -100,15 +108,15 @@ public class MainActivity extends AppCompatActivity {
     wifiHotspotManager.showWritePermissionSettings();
 
 
-    attachmentButton = (Button) findViewById(R.id.attachment_button);
+    //attachmentButton = (Button) findViewById(R.id.attachment_button);
 
     checkWriteExternalStoragePermission();
 
-    attachmentButton.setOnClickListener(new View.OnClickListener() {
-      @Override public void onClick(View view) {
-        showFileChooser();
-      }
-    });
+    //attachmentButton.setOnClickListener(new View.OnClickListener() {
+    //  @Override public void onClick(View view) {
+    //    showFileChooser();
+    //  }
+    //});
 
     buttonOnOff = (Button) findViewById(R.id.floatingActionButtonOnOff);
     buttonOnOff.setOnClickListener(new View.OnClickListener() {
@@ -344,7 +352,7 @@ public class MainActivity extends AppCompatActivity {
           throw new Exception();
         }
 
-        webServer = new WebServer(port, selectedFilePath);
+        webServer = new WebServer(port);
         webServer.start();
         //dialog.dismiss();
         return true;

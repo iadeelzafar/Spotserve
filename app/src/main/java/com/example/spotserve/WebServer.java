@@ -7,47 +7,66 @@ import fi.iki.elonen.NanoHTTPD;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Map;
 
 public class WebServer extends NanoHTTPD {
 
   File selectedFile;
   String selectedFilePath;
   String type;
-
-  public WebServer(int port, String selectedFilePath) {
+  public WebServer(int port) {
     super(port);
-    this.selectedFilePath = selectedFilePath;
-    findMimeType();
   }
 
-  private void findMimeType() {
-    String extension = MimeTypeMap.getFileExtensionFromUrl(selectedFilePath);
-    if (extension != null) {
-      type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-      Log.v("DANG", "The type is : " + type);
-    } else {
-      Log.v("DANG", "In else");
-    }
+  public WebServer(String hostname, int port) {
+    super(hostname, port);
   }
+  //public WebServer(int port, String selectedFilePath) {
+  //  super(port);
+  //  this.selectedFilePath = selectedFilePath;
+  //  findMimeType();
+  //}
+  //
+  //private void findMimeType() {
+  //  String extension = MimeTypeMap.getFileExtensionFromUrl(selectedFilePath);
+  //  if (extension != null) {
+  //    type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+  //    Log.v("DANG", "The type is : " + type);
+  //  } else {
+  //    Log.v("DANG", "In else");
+  //  }
+  //}
+  //
+  //@Override
+  //public Response serve(IHTTPSession session) {
+  //
+  //  selectedFile = new File(selectedFilePath);
+  //
+  //  FileInputStream fileInputStream = null;
+  //  try {
+  //    fileInputStream = new FileInputStream(selectedFile);
+  //  } catch (IOException e) {
+  //    e.printStackTrace();
+  //  }
+  //
+  //  return createResponse(Response.Status.OK, type, fileInputStream);
+  //}
+  //
+  ////Announce that the file server accepts partial content requests
+  //private Response createResponse(Response.Status status, String mimeType,
+  //    FileInputStream message) {
+  //  return newChunkedResponse(status, mimeType, message);
+  //}
 
   @Override
   public Response serve(IHTTPSession session) {
-
-    selectedFile = new File(selectedFilePath);
-
-    FileInputStream fileInputStream = null;
-    try {
-      fileInputStream = new FileInputStream(selectedFile);
-    } catch (IOException e) {
-      e.printStackTrace();
+    String msg = "<html><body><h1>Hello server</h1>\n";
+    Map<String, String> parms = session.getParms();
+    if (parms.get("username") == null) {
+      msg += "<form action='?' method='get'>\n  <p>Your name: <input type='text' name='username'></p>\n" + "</form>\n";
+    } else {
+      msg += "<p>Hello, " + parms.get("username") + "!</p>";
     }
-
-    return createResponse(Response.Status.OK, type, fileInputStream);
-  }
-
-  //Announce that the file server accepts partial content requests
-  private Response createResponse(Response.Status status, String mimeType,
-      FileInputStream message) {
-    return newChunkedResponse(status, mimeType, message);
+    return newFixedLengthResponse( msg + "</body></html>\n" );
   }
 }
