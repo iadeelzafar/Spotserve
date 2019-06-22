@@ -3,4 +3,12 @@
   <string name="message">You can now access the Android Web Server from a browser connected to the same network.</string>
   <string name="dialog_exit_message">Android Web Server is currently running. If you exit the application we will stop it. Are sure you want to exit the application?</string>
   <string name="warning">Warning</string>
+  <string name="yes">Yes</string>
+  <string name="hotspot_turned_on">Hotspot turned on</string>
+  <string name="hotspot_details_message">Following are the details of your local hotspot.</string>
+  <string name="hotspot_ssid_label">SSID : </string>
+  <string name="hotspot_pass_label">Pass : </string>
+  <string name="mobile_data_enabled">Warning: Mobile data enabled</string>
+  <string name="mobile_data_message">You\'re about to turn on your wifi hotspot. This feature can work without data usage.</string>
+  <string name="mobile_data_message_confirmation">Do you want to disable your data?</string>
 </resources>

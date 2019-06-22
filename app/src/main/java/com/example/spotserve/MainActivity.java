@@ -6,15 +6,19 @@ import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -24,11 +28,24 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.example.spotserve.wifi_hotspot.WifiHotspotManager;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -53,6 +70,13 @@ public class MainActivity extends AppCompatActivity {
   private TextView textViewIpAccess;
   private Button copyButton;
 
+  public static boolean nightMode;
+
+  private final int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 102;
+  private Task<LocationSettingsResponse> task;
+
+  private WifiHotspotManager wifiHotspotManager;
+
   private static final int PICK_FILE_REQUEST = 1;
   private String selectedFilePath;
   private int port;
@@ -72,6 +96,10 @@ public class MainActivity extends AppCompatActivity {
     copyButton = (Button) findViewById(R.id.copy_button);
 
     setIpAccess();
+
+    wifiHotspotManager = new WifiHotspotManager(this);
+    wifiHotspotManager.showWritePermissionSettings();
+
 
     attachmentButton = (Button) findViewById(R.id.attachment_button);
 
@@ -116,6 +144,179 @@ public class MainActivity extends AppCompatActivity {
 
     // INIT BROADCAST RECEIVER TO LISTEN NETWORK STATE CHANGED
     initBroadcastReceiverNetworkStateChanged();
+  }
+
+  public boolean onCreateOptionsMenu(Menu menu) {
+
+    menu.add(0, 1, 0, "Open AP");
+    return super.onCreateOptionsMenu(menu);
+  }
+
+  @Override public boolean onOptionsItemSelected(MenuItem item) {
+    switch(item.getItemId()) {
+      case 1:
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+          toggleHotspot();
+        } else {
+          switchHotspot();
+        }
+    }
+        return super.onOptionsItemSelected(item);
+
+  }
+
+  // For API<26 we use this
+  // Checks if wifi access point is already enabled then turns it off, otherwise enables it.
+  private void switchHotspot() {
+    if (wifiHotspotManager.isWifiApEnabled()) {
+      wifiHotspotManager.setWifiEnabled(null, false);
+    } else {
+      //Check if user's hotspot is enabled
+      if (isMobileDataEnabled(this)) {
+
+        mobileDataDialog();
+      } else {
+        wifiHotspotManager.setWifiEnabled(null, true);
+      }
+    }
+  }
+
+  // This method checks if mobile data is enabled in user's device.
+  public static boolean isMobileDataEnabled(Context context) {
+    boolean enabled = false;
+    ConnectivityManager cm =
+        (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+    try {
+      Class cmClass = Class.forName(cm.getClass().getName());
+      Method method = cmClass.getDeclaredMethod("getMobileDataEnabled");
+      method.setAccessible(true);
+      enabled = (Boolean) method.invoke(cm);
+    } catch (Exception e) {
+      Log.e("DANG ", e.toString());
+    }
+    return enabled;
+  }
+
+  //This method sends the user to data usage summary settings activity
+  public void disableMobileData() {
+    Intent intent = new Intent();
+    intent.setComponent(new ComponentName("com.android.settings",
+        "com.android.settings.Settings$DataUsageSummaryActivity"));
+    startActivity(intent);
+  }
+
+  public static int dialogStyle() {
+    if (MainActivity.nightMode) {
+      return R.style.AppTheme_Dialog_Night;
+    } else {
+      return R.style.AppTheme_Dialog;
+    }
+  }
+
+  private void mobileDataDialog() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+      AlertDialog.Builder builder = new AlertDialog.Builder(this, dialogStyle());
+
+      builder.setPositiveButton(this.getString(R.string.yes), (dialog, id) -> {
+        disableMobileData();
+      });
+      builder.setNegativeButton(android.R.string.no, (dialog, id) -> {
+        wifiHotspotManager.setWifiEnabled(null, true);
+      });
+      builder.setTitle(this.getString(R.string.mobile_data_enabled));
+      builder.setMessage(
+          this.getString(R.string.mobile_data_message) + "\n" + this.getString(
+              R.string.mobile_data_message_confirmation)
+      );
+      AlertDialog dialog = builder.create();
+      dialog.show();
+    }
+  }
+
+  @RequiresApi(api = Build.VERSION_CODES.O)
+  private void toggleHotspot() {
+    boolean check = false;
+    //Check if location permissions are granted
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        == PackageManager.PERMISSION_GRANTED) {
+      if (wifiHotspotManager.checkHotspotState()) //If hotspot is already enabled, turn it off
+      {
+        wifiHotspotManager.turnOffHotspot();
+      } else //If hotspot is not already enabled, then turn it on.
+      {
+        setupLocationServices();
+      }
+    } else {
+      //This var makes sure recursion occurs only once.
+      if (!check) {
+        //Show rationale and request location permission.
+        //No explanation needed; request the permission
+        ActivityCompat.requestPermissions(this,
+            new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
+            MY_PERMISSIONS_ACCESS_FINE_LOCATION);
+
+        check = true;
+
+        //Go to toggle hotspot to check if permission is granted.
+        toggleHotspot();
+      }
+    }
+  }
+
+  private void setupLocationServices() {
+    LocationRequest mLocationRequest = new LocationRequest();
+    mLocationRequest.setInterval(10);
+    mLocationRequest.setSmallestDisplacement(10);
+    mLocationRequest.setFastestInterval(10);
+    mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    LocationSettingsRequest.Builder builder = new
+        LocationSettingsRequest.Builder();
+    builder.addLocationRequest(mLocationRequest);
+
+    task = LocationServices.getSettingsClient(this).checkLocationSettings(builder.build());
+
+    locationSettingsResponseBuilder();
+  }
+
+  private void locationSettingsResponseBuilder() {
+    task.addOnCompleteListener(new OnCompleteListener<LocationSettingsResponse>() {
+      @Override
+      public void onComplete(Task<LocationSettingsResponse> task) {
+        try {
+          LocationSettingsResponse response = task.getResult(ApiException.class);
+          // All location settings are satisfied. The client can initialize location
+          // requests here.
+
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            wifiHotspotManager.turnOnHotspot();
+          }
+        } catch (ApiException exception) {
+          switch (exception.getStatusCode()) {
+            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+              // Location settings are not satisfied. But could be fixed by showing the
+              // user a dialog.
+              try {
+                // Cast to a resolvable exception.
+                ResolvableApiException resolvable = (ResolvableApiException) exception;
+                // Show the dialog by calling startResolutionForResult(),
+                // and check the result in onActivityResult().
+                resolvable.startResolutionForResult(
+                    MainActivity.this,
+                    101);
+              } catch (IntentSender.SendIntentException e) {
+                // Ignore the error.
+              } catch (ClassCastException e) {
+                // Ignore, should be an impossible error.
+              }
+              break;
+            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+              // Location settings are not satisfied. However, we have no way to fix the
+              // settings so we won't show the dialog.
+              break;
+          }
+        }
+      }
+    });
   }
 
   private void checkWriteExternalStoragePermission() {
