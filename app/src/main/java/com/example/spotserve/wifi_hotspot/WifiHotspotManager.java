@@ -9,6 +9,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
 import android.provider.Settings;
+import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import android.util.Log;
 import com.example.spotserve.MainActivity;
@@ -56,6 +57,10 @@ public class WifiHotspotManager {
 
       Method method = wifiManager.getClass()
           .getMethod("setWifiApEnabled", WifiConfiguration.class, boolean.class);
+      //if(isWifiApEnabled())
+      //  //Toast.makeText(context,"Hotspot turned off",Toast.LENGTH_SHORT).show();
+      //else
+      //  Toast.makeText(context,"Hotspot started",Toast.LENGTH_SHORT).show();
       return (Boolean) method.invoke(wifiManager, wifiConfig, enabled);
     } catch (Exception e) {
       Log.e(this.getClass().toString(), "", e);
@@ -79,9 +84,8 @@ public class WifiHotspotManager {
               + currentConfig.preSharedKey
               + " \n SSID is : "
               + currentConfig.SSID);
-
+          Toast.makeText(context,"Local Hotspot started",Toast.LENGTH_LONG).show();
           hotspotDetailsDialog();
-
           oreoenabled = true;
         }
 
@@ -89,12 +93,14 @@ public class WifiHotspotManager {
         public void onStopped() {
           super.onStopped();
           Log.v("DANG", "Local Hotspot Stopped");
+          Toast.makeText(context,"Local Hotspot Stopped",Toast.LENGTH_LONG).show();
         }
 
         @Override
         public void onFailed(int reason) {
           super.onFailed(reason);
           Log.v("DANG", "Local Hotspot failed to start");
+          Toast.makeText(context,"Local Hotspot failed to start",Toast.LENGTH_LONG).show();
         }
       }, new Handler());
     }

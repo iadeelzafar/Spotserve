@@ -104,19 +104,21 @@ public class MainActivity extends AppCompatActivity {
 
     setIpAccess();
 
-    wifiHotspotManager = new WifiHotspotManager(this);
-    wifiHotspotManager.showWritePermissionSettings();
+
 
 
     //attachmentButton = (Button) findViewById(R.id.attachment_button);
 
-    checkWriteExternalStoragePermission();
+    //checkWriteExternalStoragePermission();
 
     //attachmentButton.setOnClickListener(new View.OnClickListener() {
     //  @Override public void onClick(View view) {
     //    showFileChooser();
     //  }
     //});
+
+    wifiHotspotManager = new WifiHotspotManager(this);
+    wifiHotspotManager.showWritePermissionSettings();
 
     buttonOnOff = (Button) findViewById(R.id.floatingActionButtonOnOff);
     buttonOnOff.setOnClickListener(new View.OnClickListener() {
