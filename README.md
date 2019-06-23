@@ -32,3 +32,12 @@ Using this server, you can upload files of different mime types. Currently teste
   <img src="screenshots/mp4.png" height="640" width="316" /> 
 </p>
 
+### Tested Android Versions:
+So far, we've got SpotServe tested on:
+* **9** (Asus Zenfone Max M1 Pro)
+* **8.0** (Moto G4)
+* **8.1.0**(Oppo A3S)
+* **6.0.1** (Motorola Droid Turbo)
+* **5.1.1** (Oppo a37f)
+
+
