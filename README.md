@@ -34,10 +34,14 @@ Using this server, you can upload files of different mime types. Currently teste
 
 ### Tested Android Versions:
 So far, we've got SpotServe tested on:
-* **9** (Asus Zenfone Max M1 Pro)
-* **8.0** (Moto G4)
-* **8.1.0**(Oppo A3S)
-* **6.0.1** (Motorola Droid Turbo)
-* **5.1.1** (Oppo a37f)
+* **Android v 9** (Asus Zenfone Max M1 Pro)
+* **Android v 9** (Samsung J7)
+* **Android v 8.1.0**(Oppo A3S)
+* **Android v 8.0** (Moto G4)
+* **Android v 7.0** (Samsung S6)
+* **Android v 6.0.1** (Motorola Droid Turbo)
+* **Android v 6.0.1** (Redmi Note 3)
+* **Android v 5.1.1** (Oppo a37f)
+* **Android v 5.1.1** (Galaxy Tab A SM-T285)
 
 
