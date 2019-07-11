@@ -4,9 +4,12 @@ import android.content.Context;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 import fi.iki.elonen.NanoHTTPD;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.Map;
 
 public class WebServer extends NanoHTTPD {
 
@@ -31,23 +34,30 @@ public class WebServer extends NanoHTTPD {
   }
 
   @Override
-  public Response serve(IHTTPSession session) {
-
+  public Response serve(String uri, Method method,
+      Map<String, String> header,
+      Map<String, String> parameters,
+      Map<String, String> files) {
+    String answer = "";
     selectedFile = new File(selectedFilePath);
-
     FileInputStream fileInputStream = null;
     try {
+      // Open file from SD Card
+      //File root = Environment.getExternalStorageDirectory();
+      FileReader index = new FileReader(selectedFilePath);
+      BufferedReader reader = new BufferedReader(index);
       fileInputStream = new FileInputStream(selectedFile);
-    } catch (IOException e) {
-      e.printStackTrace();
+      String line = "";
+      while ((line = reader.readLine()) != null) {
+        answer += line;
+      }
+      reader.close();
+
+    } catch(IOException ioe) {
+      Log.w("Httpd", ioe.toString());
     }
 
-    return createResponse(Response.Status.OK, type, fileInputStream);
-  }
 
-  //Announce that the file server accepts partial content requests
-  private Response createResponse(Response.Status status, String mimeType,
-      FileInputStream message) {
-    return newChunkedResponse(status, mimeType, message);
+    return newFixedLengthResponse(answer);
   }
 }
