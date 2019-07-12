@@ -12,8 +12,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public class WebServer extends NanoHTTPD {
-
-  File selectedFile;
+  
   String selectedFilePath;
   String type;
 
@@ -34,19 +33,11 @@ public class WebServer extends NanoHTTPD {
   }
 
   @Override
-  public Response serve(String uri, Method method,
-      Map<String, String> header,
-      Map<String, String> parameters,
-      Map<String, String> files) {
+  public Response serve(IHTTPSession session) {
     String answer = "";
-    selectedFile = new File(selectedFilePath);
-    FileInputStream fileInputStream = null;
     try {
-      // Open file from SD Card
-      //File root = Environment.getExternalStorageDirectory();
       FileReader index = new FileReader(selectedFilePath);
       BufferedReader reader = new BufferedReader(index);
-      fileInputStream = new FileInputStream(selectedFile);
       String line = "";
       while ((line = reader.readLine()) != null) {
         answer += line;
