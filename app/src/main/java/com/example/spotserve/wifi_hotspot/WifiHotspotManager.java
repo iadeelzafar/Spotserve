@@ -1,6 +1,5 @@
 package com.example.spotserve.wifi_hotspot;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -11,9 +10,12 @@ import android.os.Handler;
 import android.provider.Settings;
 import androidx.annotation.RequiresApi;
 import android.util.Log;
+import androidx.appcompat.app.AlertDialog;
 import com.example.spotserve.MainActivity;
 import com.example.spotserve.R;
 import java.lang.reflect.Method;
+
+import static com.example.spotserve.MainActivity.refreshIp;
 
 /**
  * WifiHotstopManager class makes use of the Android's WifiManager and WifiConfiguration class
@@ -31,19 +33,6 @@ public class WifiHotspotManager {
   public WifiHotspotManager(Context context) {
     this.context = context;
     wifiManager = (WifiManager) this.context.getSystemService(Context.WIFI_SERVICE);
-  }
-
-  //To get write permission settings, we use this method.
-  public void showWritePermissionSettings() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (!Settings.System.canWrite(this.context)) {
-        Log.v("DANG", " " + !Settings.System.canWrite(this.context));
-        Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-        intent.setData(Uri.parse("package:" + this.context.getPackageName()));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        this.context.startActivity(intent);
-      }
-    }
   }
 
   // This method enables/disables the wifi access point
@@ -173,18 +162,41 @@ public class WifiHotspotManager {
     }
   }
 
-  private void hotspotDetailsDialog() {
+  public void hotspotDetailsDialog() {
 
-    AlertDialog.Builder builder = new AlertDialog.Builder(context, dialogStyle());
+    androidx.appcompat.app.AlertDialog.Builder builder =
+        new androidx.appcompat.app.AlertDialog.Builder(context, dialogStyle());
 
-    builder.setPositiveButton(android.R.string.ok, (dialog, id) -> {
-      //Do nothing
-    });
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      builder.setPositiveButton(android.R.string.ok, (dialog, id) -> {
+        refreshIp();
+      });
+    } else {
+      builder.setPositiveButton(android.R.string.ok, (dialog, id) -> {
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+          @Override
+          public void run() {
+            refreshIp();
+          }
+        }, 6000);
+      });
+    }
+
     builder.setTitle(context.getString(R.string.hotspot_turned_on));
-    builder.setMessage(
-        context.getString(R.string.hotspot_details_message) + "\n" + context.getString(
-            R.string.hotspot_ssid_label) + " " + currentConfig.SSID + "\n" + context.getString(
-            R.string.hotspot_pass_label) + " " + currentConfig.preSharedKey);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      builder.setMessage(
+          context.getString(R.string.hotspot_details_message) + "\n" + context.getString(
+              R.string.hotspot_ssid_label) + " " + currentConfig.SSID + "\n" + context.getString(
+              R.string.hotspot_pass_label) + " " + currentConfig.preSharedKey);
+    } else {
+      currentConfig = getWifiApConfiguration();
+      builder.setMessage(
+          context.getString(R.string.hotspot_details_message) + "\n" + context.getString(
+              R.string.hotspot_ssid_label) + " " + currentConfig.SSID + "\n" + context.getString(
+              R.string.hotspot_pass_label) + " " + currentConfig.preSharedKey);
+    }
+    builder.setCancelable(false);
     AlertDialog dialog = builder.create();
     dialog.show();
   }

@@ -18,8 +18,12 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.provider.Settings;
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import com.example.spotserve.web_server.WebServer;
+import com.google.android.gms.location.LocationSettingsStates;
 import com.google.android.material.snackbar.Snackbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -50,13 +54,15 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 
+import static com.example.spotserve.wifi_hotspot.HotspotService.checkHotspotState;
+
 public class MainActivity extends AppCompatActivity {
 
   private static final int DEFAULT_PORT = 8080;
   private static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 65;
 
   // INSTANCE OF ANDROID WEB SERVER
-  private WebServer webServer;
+  private static WebServer webServer;
   private BroadcastReceiver broadcastReceiverNetworkState;
   private static boolean isStarted = false;
   private Context context = this;
@@ -64,9 +70,9 @@ public class MainActivity extends AppCompatActivity {
   // VIEW
   private CoordinatorLayout coordinatorLayout;
   private EditText editTextPort;
-  private Button buttonOnOff;
+  private static Button buttonOnOff;
   private View textViewMessage;
-  private TextView textViewIpAccess;
+  private static TextView textViewIpAccess;
   private Button copyButton;
 
   public static boolean nightMode;
@@ -74,10 +80,14 @@ public class MainActivity extends AppCompatActivity {
   private final int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 102;
   private Task<LocationSettingsResponse> task;
 
-  private WifiHotspotManager wifiHotspotManager;
+  private static WifiHotspotManager wifiHotspotManager;
+  private Intent serviceIntent;
 
-  private static final int PICK_FILE_REQUEST = 1;
-  private String selectedFilePath;
+  public static final String ACTION_TURN_ON_BEFORE_O = "Turn_on_hotspot_before_oreo";
+  public static final String ACTION_TURN_OFF_BEFORE_O = "Turn_aff_hotspot_before_oreo";
+  public static final String ACTION_TURN_ON_AFTER_O = "Turn_on_hotspot_after_oreo";
+  public static final String ACTION_TURN_OFF_AFTER_O = "Turn_off_hotspot_after_oreo";
+
   private int port;
 
   Button attachmentButton;
@@ -97,20 +107,9 @@ public class MainActivity extends AppCompatActivity {
     setIpAccess();
 
     wifiHotspotManager = new WifiHotspotManager(this);
-    wifiHotspotManager.showWritePermissionSettings();
-
-
-    attachmentButton = (Button) findViewById(R.id.attachment_button);
-
-    checkWriteExternalStoragePermission();
-
-    attachmentButton.setOnClickListener(new View.OnClickListener() {
-      @Override public void onClick(View view) {
-        showFileChooser();
-      }
-    });
 
     buttonOnOff = (Button) findViewById(R.id.floatingActionButtonOnOff);
+    buttonOnOff.setEnabled(false);
     buttonOnOff.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
@@ -145,6 +144,22 @@ public class MainActivity extends AppCompatActivity {
     initBroadcastReceiverNetworkStateChanged();
   }
 
+  //To get write permission settings, we use this method.
+  private boolean showWritePermissionSettings() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+        && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+      if (!Settings.System.canWrite(this)) {
+        Log.v("DANG", " " + !Settings.System.canWrite(this));
+        Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS);
+        intent.setData(Uri.parse("package:" + this.getPackageName()));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        this.startActivity(intent);
+        return false;
+      }
+    }
+    return true; //Permission already given
+  }
+
   public boolean onCreateOptionsMenu(Menu menu) {
 
     menu.add(0, 1, 0, "Open AP");
@@ -157,9 +172,10 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
           toggleHotspot();
         } else {
-          switchHotspot();
+          if (showWritePermissionSettings()) { //request permission and if already granted switch hotspot.
+            switchHotspot();
+          }
         }
-
         setIpAccess();
     }
         return super.onOptionsItemSelected(item);
@@ -234,33 +250,42 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
+
   @RequiresApi(api = Build.VERSION_CODES.O)
   private void toggleHotspot() {
-    boolean check = false;
     //Check if location permissions are granted
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
         == PackageManager.PERMISSION_GRANTED) {
-      if (wifiHotspotManager.checkHotspotState()) //If hotspot is already enabled, turn it off
+      if (checkHotspotState(this)) //If hotspot is already enabled, turn it off
       {
-        wifiHotspotManager.turnOffHotspot();
+        startService(ACTION_TURN_OFF_AFTER_O);
       } else //If hotspot is not already enabled, then turn it on.
       {
         setupLocationServices();
       }
     } else {
-      //This var makes sure recursion occurs only once.
-      if (!check) {
-        //Show rationale and request location permission.
-        //No explanation needed; request the permission
-        ActivityCompat.requestPermissions(this,
-            new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
-            MY_PERMISSIONS_ACCESS_FINE_LOCATION);
+      //Ask location permission if not granted
+      ActivityCompat.requestPermissions(this,
+          new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
+          MY_PERMISSIONS_ACCESS_FINE_LOCATION);
+    }
+  }
 
-        check = true;
-
-        //Go to toggle hotspot to check if permission is granted.
-        toggleHotspot();
+  @Override public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+      @NonNull int[] grantResults) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    switch (requestCode) {
+      case MY_PERMISSIONS_ACCESS_FINE_LOCATION: {
+        if (grantResults.length > 0
+            && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            toggleHotspot();
+          }
+        }
+        break;
       }
+      default:
+        break;
     }
   }
 
@@ -320,21 +345,10 @@ public class MainActivity extends AppCompatActivity {
     });
   }
 
-  private void checkWriteExternalStoragePermission() {
-    // Here, thisActivity is the current activity
-    if (ContextCompat.checkSelfPermission(this,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        != PackageManager.PERMISSION_GRANTED) {
-
-      // No explanation needed; request the permission
-      ActivityCompat.requestPermissions(this,
-          new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE },
-          MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
-    } else {
-      // Permission has already been granted
-    }
+  public static void refreshIp() {
+    buttonOnOff.setEnabled(true);
+    setIpAccess();
   }
-
   //region Start And Stop WebServer
   private boolean startAndroidWebServer() {
     if (!isStarted) {
@@ -344,7 +358,7 @@ public class MainActivity extends AppCompatActivity {
           throw new Exception();
         }
 
-        webServer = new WebServer(port, selectedFilePath);
+        webServer = new WebServer(port);
         webServer.start();
         //dialog.dismiss();
         return true;
@@ -358,30 +372,21 @@ public class MainActivity extends AppCompatActivity {
     return false;
   }
 
-  //chooses file
-  private void showFileChooser() {
-    Log.v("DANG", "Coming 7");
-    Intent intent = new Intent();
-    //sets the select file to all types of files
-    intent.setType("file/*");
-    //allows to select data and return it
-    intent.setAction(Intent.ACTION_GET_CONTENT);
-    //starts new activity to select file and return data
-    startActivityForResult(Intent.createChooser(intent, "Choose File to Upload.."),
-        PICK_FILE_REQUEST);
-  }
-
-  private boolean stopAndroidWebServer() {
+  public static boolean stopAndroidWebServer() {
     if (isStarted && webServer != null) {
       webServer.stop();
+      buttonOnOff.setEnabled(false);
+      setIpAccess();
       return true;
     }
     return false;
   }
   //endregion
-
+  public static void startHotspotDetails() {
+    wifiHotspotManager.hotspotDetailsDialog();
+  }
   //region Private utils Method
-  private void setIpAccess() {
+  private static void setIpAccess() {
     textViewIpAccess.setText(getIpAddress());
   }
 
@@ -402,18 +407,6 @@ public class MainActivity extends AppCompatActivity {
     String valueEditText = editTextPort.getText().toString();
     return (valueEditText.length() > 0) ? Integer.parseInt(valueEditText) : DEFAULT_PORT;
   }
-
-  public boolean isConnectedInWifi() {
-    WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-    NetworkInfo networkInfo = ((ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE))
-        .getActiveNetworkInfo();
-    if (networkInfo != null && networkInfo.isAvailable() && networkInfo.isConnected()
-        && wifiManager.isWifiEnabled() && networkInfo.getTypeName().equals("WIFI")) {
-      return true;
-    }
-    return false;
-  }
-  //endregion
 
   public boolean onKeyDown(int keyCode, KeyEvent evt) {
     if (keyCode == KeyEvent.KEYCODE_BACK) {
@@ -448,7 +441,7 @@ public class MainActivity extends AppCompatActivity {
   }
 
   // get Ip address of the device's wireless access point i.e. wifi hotspot OR wifi network
-  private String getIpAddress() {
+  private static String getIpAddress() {
     String ip = "";
     try {
       Enumeration<NetworkInterface> enumNetworkInterfaces = NetworkInterface
@@ -478,23 +471,32 @@ public class MainActivity extends AppCompatActivity {
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     if (resultCode == Activity.RESULT_OK) {
-      if (requestCode == PICK_FILE_REQUEST) {
-        if (data == null) {
-          //no data present
-          return;
-        }
-
-        Uri selectedFileUri = data.getData();
-        selectedFilePath = FilePath.getPath(this, selectedFileUri);
-        Log.i("DANG", "Selected File Path:" + selectedFilePath);
-
-        if (selectedFilePath != null && !selectedFilePath.equals("")) {
-          Toast.makeText(this, selectedFilePath, Toast.LENGTH_LONG).show();
-        } else {
-          Toast.makeText(this, "Cannot upload file to server", Toast.LENGTH_SHORT).show();
-        }
+      switch (requestCode) {
+        case 101:
+          final LocationSettingsStates states = LocationSettingsStates.fromIntent(data);
+          switch (resultCode) {
+            case Activity.RESULT_OK:
+              // All required changes were successfully made
+              Log.v("case 101", states.isLocationPresent() + "");
+              startService(ACTION_TURN_ON_AFTER_O);
+              break;
+            case Activity.RESULT_CANCELED:
+              // The user was asked to change settings, but chose not to
+              Log.v("case 101", "Canceled");
+              break;
+            default:
+              break;
+          }
+          break;
+        default:
+          break;
       }
     }
+  }
+
+  private void startService(String ACTION) {
+    serviceIntent.setAction(ACTION);
+    this.startService(serviceIntent);
   }
 }
 
